@@ -1,7 +1,8 @@
 package com.gildedrose;
 
+import java.util.Arrays;
+
 import static com.gildedrose.Constant.*;
-import static java.lang.Math.negateExact;
 
 class GildedRose {
 
@@ -12,25 +13,34 @@ class GildedRose {
     }
 
     public void updateQuality() {
-        for (Item item : items) {
-            if (!LEGENDARY_ITEM_NAMES.contains(item.name)) {
-                item.sellIn--;
+        Arrays.stream(items)
+            .filter(item -> !LEGENDARY_ITEM_NAMES.contains(item.name))
+            .forEach(GildedRose::updateItemQuality);
+    }
 
-                final boolean sellInPassed = item.sellIn < 0;
-                int addQuality = sellInPassed ? 2 : 1;
+    /**
+     * Update quality and sellIn of an item
+     * @param item : item to be updated
+     */
+    private static void updateItemQuality(Item item) {
+        item.sellIn--;
 
-                if (EXPIRE_ITEM_NAMES.contains(item.name)) {
-                    addQuality = sellInPassed ? negateExact(item.quality) : Math.max(3 - (item.sellIn / 5), 1);
-                } else if (!INCREASE_QUALITY_ITEM_NAMES.contains(item.name)) {
-                    if (item.name.contains(CONJURED)) {
-                        addQuality = addQuality * 2;
-                    }
-                    addQuality = negateExact(addQuality);
-                }
+        final boolean sellInPassed = item.sellIn < 0;
+        int addQuality = sellInPassed ? 2 : 1;
 
-                calculateQuality(item, addQuality);
+        if (EXPIRE_ITEM_NAMES.contains(item.name)) {
+            //Expire items will expire (quality=0) if sellIn is passed else the quality increase depending on sellIn
+            addQuality = sellInPassed ? -item.quality : Math.max(3 - (item.sellIn / 5), 1);
+        } else if (!INCREASE_QUALITY_ITEM_NAMES.contains(item.name)) {
+            //Conjured items double the quality change
+            if (item.name.contains(CONJURED)) {
+                addQuality *= 2;
             }
+            //if not in the increase list then quality will decrease
+            addQuality = -addQuality;
         }
+
+        calculateQuality(item, addQuality);
     }
 
     /**
